@@ -335,7 +335,7 @@ class StreamTracking:
 
 def run_stream(stream_id, stream_url, event):
     print(f'Running stream {stream_id}')
-    d = StreamTracking(stream_url, event_listener=event)
+    d = StreamTracking(stream_url, event_listener=event, device='cpu')
     d.run()
 
 

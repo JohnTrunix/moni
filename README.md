@@ -58,7 +58,7 @@ pip3 install torch torchvision torchaudio --extra-index-url https://download.pyt
 Without CUDA support:
 
 ```console
-pip install torch>=1.7.0!=1.12.0 torchvision>=0.8.1,!=0.13.0
+pip install torch>=1.7.0,!=1.12.0 torchvision>=0.8.1,!=0.13.0
 ```
 
 ### Install Requirements
