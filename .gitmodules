@@ -3,9 +3,9 @@
 	url = https://github.com/mikel-brostrom/Yolov7_StrongSORT_OSNet.git
 
 
-[submodule "strong_sort/deep/reid"]
+[submodule "Yolov7_StrongSORT_OSNet/strong_sort/deep/reid"]
 	path = Yolov7_StrongSORT_OSNet/strong_sort/deep/reid
 	url = https://github.com/KaiyangZhou/deep-person-reid.git
-[submodule "yolov7"]
+[submodule "Yolov7_StrongSORT_OSNet/yolov7"]
 	path = Yolov7_StrongSORT_OSNet/yolov7
 	url = https://github.com/mikel-brostrom/yolov7.git

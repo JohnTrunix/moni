@@ -1,5 +1,6 @@
 # Custom rules for the project
 data/
+weights/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
