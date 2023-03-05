@@ -1,22 +1,16 @@
 import os
-
-# os.environ["OMP_NUM_THREADS"] = "1"
-# os.environ["OPENBLAS_NUM_THREADS"] = "1"
-# os.environ["MKL_NUM_THREADS"] = "1"
-# os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
-# os.environ["NUMEXPR_NUM_THREADS"] = "1"
-
 import sys
-import numpy as np
 from pathlib import Path
 import torch
 import torch.backends.cudnn as cudnn
 from numpy import random
 
 FILE = Path(__file__).resolve()
-ROOT = FILE.parents[0] / 'Yolov7_StrongSORT_OSNet'  # yolov5 strongsort root directory
+ROOT = FILE.parents[0] / 'Yolov7_StrongSORT_OSNet'
 WEIGHTS = FILE.parents[0] / 'weights'
+VID_FORMATS = 'asf', 'avi', 'gif', 'm4v', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 'ts', 'wmv'
 
+# autopep8: off
 if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))  # add ROOT to PATH
 if str(ROOT / 'yolov7') not in sys.path:
@@ -28,7 +22,6 @@ if str(ROOT / 'strong_sort'/ 'deep' / 'reid') not in sys.path:
 
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
-
 from Yolov7_StrongSORT_OSNet.yolov7.models.experimental import attempt_load
 from Yolov7_StrongSORT_OSNet.yolov7.utils.datasets import LoadImages, LoadStreams
 from Yolov7_StrongSORT_OSNet.yolov7.utils.general import (check_img_size, non_max_suppression, scale_coords, check_requirements, cv2,
@@ -37,15 +30,11 @@ from Yolov7_StrongSORT_OSNet.yolov7.utils.torch_utils import select_device, time
 #from Yolov7_StrongSORT_OSNet.yolov7.utils.plots import plot_one_box       -> using custom function
 from Yolov7_StrongSORT_OSNet.strong_sort.utils.parser import get_config
 from Yolov7_StrongSORT_OSNet.strong_sort.strong_sort import StrongSORT
-
-# include video suffixes
-VID_FORMATS = 'asf', 'avi', 'gif', 'm4v', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 'ts', 'wmv'
+# autopep8: on
 
 from dotenv import load_dotenv
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
-    
-    
 
 class StreamTracking:
     def __init__(self,
@@ -59,7 +48,6 @@ class StreamTracking:
                  conf_thres=0.25,  # confidence threshold
                  iou_thres=0.45,  # NMS IOU threshold
                  max_det=1000,  # maximum detections per image
-                 device='0',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
                  show_vid=True,  # show results
                  save_txt=False,  # save results to *.txt
                  save_conf=False,  # save confidences in --save-txt labels
@@ -355,7 +343,6 @@ class StreamTracking:
             strip_optimizer(self.yolo_weights)
 
 
-
 def plot_one_box(x, img, color=None, label=None, line_thickness=3):
     # Plots one bounding box on image img
     tl = line_thickness or round(0.002 * (img.shape[0] + img.shape[1]) / 2) + 1  # line/font thickness
@@ -384,15 +371,15 @@ def run_stream(stream_id, stream_url, device, mp_barrier, show_vid=False):
                        mp_barrier=mp_barrier, 
                        device=device, 
                        show_vid=show_vid)
+
     d.run()
 
 
 if __name__ == '__main__':
     from multiprocessing import Process, Barrier
-    
+
     check_requirements(requirements=ROOT / 'requirements.txt',
                        exclude=('tensorboard', 'thop'))
-
     
     mp_barrier = Barrier(3)
     s1 = Process(target=run_stream, args=(1, './data/campus/campus4-c0.avi', '0', mp_barrier, True))
