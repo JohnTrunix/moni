@@ -1,22 +1,17 @@
 import os
-
-# os.environ["OMP_NUM_THREADS"] = "1"
-# os.environ["OPENBLAS_NUM_THREADS"] = "1"
-# os.environ["MKL_NUM_THREADS"] = "1"
-# os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
-# os.environ["NUMEXPR_NUM_THREADS"] = "1"
-
 import sys
-import numpy as np
 from pathlib import Path
 import torch
 import torch.backends.cudnn as cudnn
 from numpy import random
 
 FILE = Path(__file__).resolve()
-ROOT = FILE.parents[0] / 'Yolov7_StrongSORT_OSNet'  # yolov5 strongsort root directory
+ROOT = FILE.parents[0] / 'Yolov7_StrongSORT_OSNet'
 WEIGHTS = FILE.parents[0] / 'weights'
+VID_FORMATS = 'asf', 'avi', 'gif', 'm4v', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 'ts', 'wmv'
 
+
+# autopep8: off
 if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))  # add ROOT to PATH
 if str(ROOT / 'yolov7') not in sys.path:
@@ -37,15 +32,14 @@ from Yolov7_StrongSORT_OSNet.yolov7.utils.torch_utils import select_device, time
 from Yolov7_StrongSORT_OSNet.yolov7.utils.plots import plot_one_box
 from Yolov7_StrongSORT_OSNet.strong_sort.utils.parser import get_config
 from Yolov7_StrongSORT_OSNet.strong_sort.strong_sort import StrongSORT
-
-# include video suffixes
-VID_FORMATS = 'asf', 'avi', 'gif', 'm4v', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 'ts', 'wmv'
+# autopep8: on
 
 
 class StreamTracking:
     def __init__(self,
                  source,
                  event_listener,
+                 device,
                  yolo_weights=WEIGHTS / 'yolov7x.pt',  # model.pt path(s),
                  strong_sort_weights=WEIGHTS / 'osnet_x0_25_msmt17.pt',  # model.pt path,
                  config_strongsort=ROOT / 'strong_sort/configs/strong_sort.yaml',
@@ -53,7 +47,6 @@ class StreamTracking:
                  conf_thres=0.25,  # confidence threshold
                  iou_thres=0.45,  # NMS IOU threshold
                  max_det=1000,  # maximum detections per image
-                 device='0',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
                  show_vid=True,  # show results
                  save_txt=False,  # save results to *.txt
                  save_conf=False,  # save confidences in --save-txt labels
@@ -320,7 +313,7 @@ class StreamTracking:
                     self.vid_writer[i].write(im0)
 
                 prev_frames[i] = curr_frames[i]
-            
+
             self.event_listener.wait()
 
         t = tuple(x / seen * 1E3 for x in dt)
@@ -333,22 +326,26 @@ class StreamTracking:
             strip_optimizer(self.yolo_weights)
 
 
-def run_stream(stream_id, stream_url, event):
+def run_stream(stream_id, stream_url, event_listener, device):
     print(f'Running stream {stream_id}')
-    d = StreamTracking(stream_url, event_listener=event, device='cpu', show_vid=False)
+    d = StreamTracking(stream_url, device=device, event_listener=event_listener,
+                       show_vid=False)
     d.run()
 
 
 if __name__ == '__main__':
     from multiprocessing import Process, Barrier
-    
+
     check_requirements(requirements=ROOT / 'requirements.txt',
                        exclude=('tensorboard', 'thop'))
-    
+
     event = Barrier(3)
-    s1 = Process(target=run_stream, args=(1, './data/campus/campus4-c0.avi', event))
-    s2 = Process(target=run_stream, args=(2, './data/campus/campus4-c1.avi', event))
-    s3 = Process(target=run_stream, args=(3, './data/campus/campus4-c2.avi', event))
+    s1 = Process(target=run_stream, args=(
+        1, './data/campus/campus4-c0.avi', event, 0))
+    s2 = Process(target=run_stream, args=(
+        2, './data/campus/campus4-c1.avi', event, 0))
+    s3 = Process(target=run_stream, args=(
+        3, './data/campus/campus4-c2.avi', event, 0))
 
     s1.start()
     s2.start()
