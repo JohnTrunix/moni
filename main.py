@@ -1,8 +1,13 @@
 import os
 import sys
 from pathlib import Path
+
+import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
+from dotenv import load_dotenv
+from influxdb_client import InfluxDBClient, Point
+from influxdb_client.client.write_api import SYNCHRONOUS
 from numpy import random
 
 FILE = Path(__file__).resolve()
@@ -11,6 +16,7 @@ WEIGHTS = FILE.parents[0] / 'weights'
 VID_FORMATS = 'asf', 'avi', 'gif', 'm4v', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 'ts', 'wmv'
 
 # autopep8: off
+
 if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))  # add ROOT to PATH
 if str(ROOT / 'yolov7') not in sys.path:
@@ -22,19 +28,26 @@ if str(ROOT / 'strong_sort'/ 'deep' / 'reid') not in sys.path:
 
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
-from Yolov7_StrongSORT_OSNet.yolov7.models.experimental import attempt_load
-from Yolov7_StrongSORT_OSNet.yolov7.utils.datasets import LoadImages, LoadStreams
-from Yolov7_StrongSORT_OSNet.yolov7.utils.general import (check_img_size, non_max_suppression, scale_coords, check_requirements, cv2,
-                                  check_imshow, xyxy2xywh, increment_path, strip_optimizer, colorstr, check_file)
-from Yolov7_StrongSORT_OSNet.yolov7.utils.torch_utils import select_device, time_synchronized
-#from Yolov7_StrongSORT_OSNet.yolov7.utils.plots import plot_one_box       -> using custom function
-from Yolov7_StrongSORT_OSNet.strong_sort.utils.parser import get_config
 from Yolov7_StrongSORT_OSNet.strong_sort.strong_sort import StrongSORT
+from Yolov7_StrongSORT_OSNet.strong_sort.utils.parser import get_config
+from Yolov7_StrongSORT_OSNet.yolov7.models.experimental import attempt_load
+from Yolov7_StrongSORT_OSNet.yolov7.utils.datasets import (LoadImages,
+                                                           LoadStreams)
+from Yolov7_StrongSORT_OSNet.yolov7.utils.general import (check_file,
+                                                          check_img_size,
+                                                          check_imshow,
+                                                          check_requirements,
+                                                          colorstr, cv2,
+                                                          increment_path,
+                                                          non_max_suppression,
+                                                          scale_coords,
+                                                          strip_optimizer,
+                                                          xyxy2xywh)
+from Yolov7_StrongSORT_OSNet.yolov7.utils.torch_utils import (
+    select_device, time_synchronized)
+
 # autopep8: on
 
-from dotenv import load_dotenv
-from influxdb_client import InfluxDBClient, Point
-from influxdb_client.client.write_api import SYNCHRONOUS
 
 class StreamTracking:
     def __init__(self,
@@ -43,11 +56,11 @@ class StreamTracking:
                  mp_barrier,
                  yolo_weights,  # model.pt path(s),
                  strong_sort_weights,  # model.pt path,
-                 config_strongsort,
                  imgsz=(640, 640),  # inference size (height, width)
                  conf_thres=0.25,  # confidence threshold
                  iou_thres=0.45,  # NMS IOU threshold
                  max_det=1000,  # maximum detections per image
+                 device='0',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
                  show_vid=True,  # show results
                  save_txt=False,  # save results to *.txt
                  save_conf=False,  # save confidences in --save-txt labels
@@ -75,7 +88,6 @@ class StreamTracking:
         self.mp_barrier = mp_barrier
         self.yolo_weights = yolo_weights
         self.strong_sort_weights = strong_sort_weights
-        self.config_strongsort = config_strongsort
         self.imgsz = imgsz
         self.conf_thres = conf_thres
         self.iou_thres = iou_thres
@@ -108,9 +120,9 @@ class StreamTracking:
         self.token = os.getenv('INFLUX_TOKEN')
         self.org = os.getenv('INFLUX_ORG')
         self.bucket = os.getenv('INFLUX_BUCKET')
-        self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
+        self.client = InfluxDBClient(
+            url=self.url, token=self.token, org=self.org)
         self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
-
 
         # Organise Data
         self.save_img = not self.nosave and not self.source.endswith('.txt')
@@ -163,7 +175,6 @@ class StreamTracking:
 
         # init StrongSORT
         self.cfg = get_config()
-        self.cfg.merge_from_file(self.config_strongsort)
         self._create_strongsort_instances()
         self.outputs = [None] * self.nr_sources
         self.colors = [[random.randint(0, 255)
@@ -177,13 +188,20 @@ class StreamTracking:
                     self.strong_sort_weights,
                     self.device,
                     self.half,
-                    max_dist=self.cfg.STRONGSORT.MAX_DIST,
-                    max_iou_distance=self.cfg.STRONGSORT.MAX_IOU_DISTANCE,
-                    max_age=self.cfg.STRONGSORT.MAX_AGE,
-                    n_init=self.cfg.STRONGSORT.N_INIT,
-                    nn_budget=self.cfg.STRONGSORT.NN_BUDGET,
-                    mc_lambda=self.cfg.STRONGSORT.MC_LAMBDA,
-                    ema_alpha=self.cfg.STRONGSORT.EMA_ALPHA,
+                    mc_lambda=float(
+                        os.getenv('STRONGSORT_MC_LAMBDA', '0.0')),
+                    ema_alpha=float(
+                        os.getenv('STRONGSORT_EMA_ALPHA', '0.0')),
+                    max_dist=float(
+                        os.getenv('STRONGSORT_MAX_DIST', '0.0')),
+                    max_iou_distance=float(
+                        os.getenv('STRONGSORT_MAX_IOU_DISTANCE', '0.0')),
+                    max_age=int(
+                        os.getenv('STRONGSORT_MAX_AGE', '0')),
+                    n_init=int(
+                        os.getenv('STRONGSORT_N_INIT', '0')),
+                    nn_budget=int(
+                        os.getenv('STRONGSORT_NN_BUDGET', '0'))
                 )
             )
             self.strongsort_list[i].model.warmup()
@@ -244,7 +262,7 @@ class StreamTracking:
                 s += '%gx%g ' % im.shape[2:]
                 imc = im0.copy() if self.save_crop else im0
 
-                if self.cfg.STRONGSORT.ECC:
+                if (os.getenv('STRONGSORT_ECC', 'False') == 'True'):
                     self.strongsort_list[i].tracker.camera_update(
                         prev_frames[i], curr_frames[i])
 
@@ -268,19 +286,19 @@ class StreamTracking:
 
                     # draw boxes for visualization
                     if len(self.outputs[i]) > 0:
-                        
+
                         for j, (output, conf) in enumerate(zip(self.outputs[i], confs)):
 
                             bboxes = output[0:4]
                             id = output[4]
                             cls = output[5]
 
-                            #print('Stream: {} ID: {} \t Position: {}/{}'.format(self.stream_id, id, int((bboxes[0] + bboxes[2]) / 2), int(bboxes[3])))
-                            
+                            # print('Stream: {} ID: {} \t Position: {}/{}'.format(self.stream_id, id, int((bboxes[0] + bboxes[2]) / 2), int(bboxes[3])))
+
                             point = Point('person').tag('stream', self.stream_id
                                                         ).tag('frame', frame_idx).tag('id', id
-                                                        ).field('x', int((bboxes[0] + bboxes[2]) / 2)
-                                                        ).field('y', int(bboxes[3]))
+                                                                                      ).field('x', int((bboxes[0] + bboxes[2]) / 2)
+                                                                                              ).field('y', int(bboxes[3]))
                             self.write_api.write(self.bucket, record=point)
 
                             if self.save_txt:
@@ -300,7 +318,6 @@ class StreamTracking:
                                                                        (f'{id} {conf:.2f}' if self.hide_class else f'{id} {self.names[c]} {conf:.2f}'))
                                 plot_one_box(bboxes, im0, label=label, color=self.colors[int(
                                     cls)], line_thickness=self.line_thickness)
-                        
 
                     print(
                         f'{s}Done. YOLO:({t3 - t2:.3f}s), StrongSort:({t5 - t4:.3f}s)')
@@ -330,7 +347,7 @@ class StreamTracking:
                     self.vid_writer[i].write(im0)
 
                 prev_frames[i] = curr_frames[i]
-            
+
             self.mp_barrier.wait()
 
         t = tuple(x / seen * 1E3 for x in dt)
@@ -345,46 +362,48 @@ class StreamTracking:
 
 def plot_one_box(x, img, color=None, label=None, line_thickness=3):
     # Plots one bounding box on image img
-    tl = line_thickness or round(0.002 * (img.shape[0] + img.shape[1]) / 2) + 1  # line/font thickness
+    tl = line_thickness or round(
+        0.002 * (img.shape[0] + img.shape[1]) / 2) + 1  # line/font thickness
     color = color or [random.randint(0, 255) for _ in range(3)]
     c1, c2 = (int(x[0]), int(x[1])), (int(x[2]), int(x[3]))
     cv2.rectangle(img, c1, c2, color, thickness=tl, lineType=cv2.LINE_AA)
     # plot dot in lower center
-    cv2.circle(img, (int((x[0] + x[2]) / 2), int(x[3])), 8, color, thickness=1, lineType=cv2.LINE_AA)
+    cv2.circle(img, (int((x[0] + x[2]) / 2), int(x[3])),
+               8, color, thickness=1, lineType=cv2.LINE_AA)
     if label:
         tf = max(tl - 1, 1)  # font thickness
         t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
         c2 = c1[0] + t_size[0], c1[1] - t_size[1] - 3
         cv2.rectangle(img, c1, c2, color, -1, cv2.LINE_AA)  # filled
-        cv2.putText(img, label, (c1[0], c1[1] - 2), 0, tl / 3, [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
-
-
+        cv2.putText(img, label, (c1[0], c1[1] - 2), 0, tl / 3,
+                    [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
 
 
 def run_stream(stream_id, stream_url, device, mp_barrier, show_vid=False):
     print(f'Running stream {stream_id}')
     d = StreamTracking(stream_id,
-                       stream_url, 
-                       yolo_weights= WEIGHTS / 'yolov7.pt',
-                       strong_sort_weights= WEIGHTS / 'osnet_x0_75_msmt17.pt', 
-                       config_strongsort='./config/strong_sort.yaml', 
-                       mp_barrier=mp_barrier, 
-                       device=device, 
+                       stream_url,
+                       yolo_weights=WEIGHTS / 'yolov7.pt',
+                       strong_sort_weights=WEIGHTS / 'osnet_x0_75_msmt17.pt',
+                       mp_barrier=mp_barrier,
+                       device=device,
                        show_vid=show_vid)
-
     d.run()
 
 
 if __name__ == '__main__':
-    from multiprocessing import Process, Barrier
+    from multiprocessing import Barrier, Process
 
     check_requirements(requirements=ROOT / 'requirements.txt',
                        exclude=('tensorboard', 'thop'))
-    
+
     mp_barrier = Barrier(3)
-    s1 = Process(target=run_stream, args=(1, './data/campus/campus4-c0.avi', '0', mp_barrier, True))
-    s2 = Process(target=run_stream, args=(2, './data/campus/campus4-c1.avi', '0', mp_barrier, True))
-    s3 = Process(target=run_stream, args=(3, './data/campus/campus4-c2.avi', '0', mp_barrier, True))
+    s1 = Process(target=run_stream, args=(
+        1, './data/campus/campus4-c0.avi', '0', mp_barrier, False))
+    s2 = Process(target=run_stream, args=(
+        2, './data/campus/campus4-c1.avi', '0', mp_barrier, False))
+    s3 = Process(target=run_stream, args=(
+        3, './data/campus/campus4-c2.avi', '0', mp_barrier, False))
 
     s1.start()
     s2.start()
