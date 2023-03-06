@@ -129,19 +129,22 @@ class StreamTracking:
 
         # Setup ffmpeg process
         if self.rtmp_url is not None:
-            self.rtmp_process = subprocess.Popen(['ffmpeg', 
-                                        '-y', 
-                                        '-f', 
-                                        'rawvideo', 
-                                        '-pix_fmt', 
-                                        'bgr24', 
-                                        '-s', 
-                                        '640x640', 
-                                        '-i', 
-                                        '-', 
-                                        '-f', 
-                                        'flv', 
-                                        self.rtmp_url], stdin=subprocess.PIPE)
+            self.rtmp_process = subprocess.Popen([
+                                      'ffmpeg', 
+                                      '-y', 
+                                      '-f', 
+                                      'rawvideo', 
+                                      '-pix_fmt', 
+                                      'bgr24', 
+                                      '-s', 
+                                      '360x288',  
+                                      '-i', 
+                                      '-',
+                                      '-fps_mode',
+                                      'cfr',
+                                      '-f', 
+                                      'flv', 
+                                      self.rtmp_url], stdin=subprocess.PIPE)
         
 
 
@@ -332,7 +335,7 @@ class StreamTracking:
                                     f.write(('%g ' * 10 + '\n') % (frame_idx + 1, id,
                                             bbox_left, bbox_top, bbox_w, bbox_h, -1, -1, -1, i))
 
-                            if self.save_vid or self.save_crop or self.show_vid:
+                            if self.save_vid or self.save_crop or self.show_vid or True:
                                 c = int(cls)
                                 id = int(id)
                                 label = None if self.hide_labels else (f'{id} {self.names[c]}' if self.hide_conf else
@@ -350,6 +353,10 @@ class StreamTracking:
                 if self.show_vid:
                     cv2.imshow(str(p), im0)
                     cv2.waitKey(1)
+
+                if self.rtmp_url is not None:
+                    frame_bytes = im0.tostring()
+                    self.rtmp_process.stdin.write(frame_bytes)
 
                 if self.save_vid:
                     if self.vid_path[i] != save_path:
@@ -369,9 +376,7 @@ class StreamTracking:
 
                 prev_frames[i] = curr_frames[i]
 
-            if self.rtmp_url is not None:
-                self.rtmp_process.stdin.write(im0.tostring())
-                print('RTMP: Done')
+
             
             self.mp_barrier.wait()
 
@@ -383,6 +388,9 @@ class StreamTracking:
             print(f"Results saved to {colorstr('bold', self.save_dir)}{s}")
         if self.update:
             strip_optimizer(self.yolo_weights)
+    
+        self.rtmp_process.stdin.close()
+        self.rtmp_process.wait()
 
 
 def plot_one_box(x, img, color=None, label=None, line_thickness=3):
