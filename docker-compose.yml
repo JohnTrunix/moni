@@ -19,3 +19,26 @@ services:
                     devices:
                         - driver: nvidia
                           capabilities: [gpu]
+
+    influxdb:
+        image: influxdb:2.6.1-alpine
+        container_name: influxdb
+        restart: unless-stopped
+        security_opt:
+            - no-new-privileges:true
+        volumes:
+            - influxdb_data:/var/lib/influxdb2
+        ports:
+            - 8086:8086/tcp
+
+    rtmp-server:
+        image: alqutami/rtmp-hls:latest-alpine
+        container_name: rtmp-server
+        restart: unless-stopped
+        security_opt:
+            - no-new-privileges:true
+        ports:
+            - 1935:1935/tcp
+
+volumes:
+    influxdb_data:
