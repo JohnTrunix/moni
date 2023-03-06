@@ -8,6 +8,7 @@ import torch.backends.cudnn as cudnn
 from dotenv import load_dotenv
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
+import subprocess
 from numpy import random
 
 FILE = Path(__file__).resolve()
@@ -55,7 +56,8 @@ class StreamTracking:
                  source,
                  mp_barrier,
                  yolo_weights,  # model.pt path(s),
-                 strong_sort_weights,  # model.pt path,
+                 strong_sort_weights,
+                 rtmp_url=None,  # model.pt path,
                  imgsz=(640, 640),  # inference size (height, width)
                  conf_thres=0.25,  # confidence threshold
                  iou_thres=0.45,  # NMS IOU threshold
@@ -85,6 +87,7 @@ class StreamTracking:
 
         self.stream_id = stream_id
         self.source = str(source)
+        self.rtmp_url = rtmp_url
         self.mp_barrier = mp_barrier
         self.yolo_weights = yolo_weights
         self.strong_sort_weights = strong_sort_weights
@@ -123,6 +126,24 @@ class StreamTracking:
         self.client = InfluxDBClient(
             url=self.url, token=self.token, org=self.org)
         self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
+
+        # Setup ffmpeg process
+        if self.rtmp_url is not None:
+            self.rtmp_process = subprocess.Popen(['ffmpeg', 
+                                        '-y', 
+                                        '-f', 
+                                        'rawvideo', 
+                                        '-pix_fmt', 
+                                        'bgr24', 
+                                        '-s', 
+                                        '640x640', 
+                                        '-i', 
+                                        '-', 
+                                        '-f', 
+                                        'flv', 
+                                        self.rtmp_url], stdin=subprocess.PIPE)
+        
+
 
         # Organise Data
         self.save_img = not self.nosave and not self.source.endswith('.txt')
@@ -348,6 +369,10 @@ class StreamTracking:
 
                 prev_frames[i] = curr_frames[i]
 
+            if self.rtmp_url is not None:
+                self.rtmp_process.stdin.write(im0.tostring())
+                print('RTMP: Done')
+            
             self.mp_barrier.wait()
 
         t = tuple(x / seen * 1E3 for x in dt)
@@ -379,10 +404,11 @@ def plot_one_box(x, img, color=None, label=None, line_thickness=3):
                     [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
 
 
-def run_stream(stream_id, stream_url, device, mp_barrier, show_vid=False):
+def run_stream(stream_id, stream_url, device, mp_barrier, show_vid=False, rtmp_url=None):
     print(f'Running stream {stream_id}')
     d = StreamTracking(stream_id,
                        stream_url,
+                       rtmp_url=rtmp_url,
                        yolo_weights=WEIGHTS / 'yolov7.pt',
                        strong_sort_weights=WEIGHTS / 'osnet_x0_75_msmt17.pt',
                        mp_barrier=mp_barrier,
@@ -397,13 +423,19 @@ if __name__ == '__main__':
     check_requirements(requirements=ROOT / 'requirements.txt',
                        exclude=('tensorboard', 'thop'))
 
+    rtmp1 = 'rtmp://34.107.58.127:1935/live/588fa378-3ac9-4abb-bb3a-7539ce0b0801'
+    rtmp2 = 'rtmp://34.107.58.127:1935/live/588fa378-3ac9-4abb-bb3a-7539ce0b0802'
+    rtmp3 = 'rtmp://34.107.58.127:1935/live/588fa378-3ac9-4abb-bb3a-7539ce0b0803'
+
     mp_barrier = Barrier(3)
     s1 = Process(target=run_stream, args=(
-        1, './data/campus/campus4-c0.avi', '0', mp_barrier, False))
+        1, './data/campus/campus4-c0.avi', '0', mp_barrier, False, rtmp1))
+    
     s2 = Process(target=run_stream, args=(
-        2, './data/campus/campus4-c1.avi', '0', mp_barrier, False))
+        2, './data/campus/campus4-c1.avi', '0', mp_barrier, False, rtmp2))
     s3 = Process(target=run_stream, args=(
-        3, './data/campus/campus4-c2.avi', '0', mp_barrier, False))
+        3, './data/campus/campus4-c2.avi', '0', mp_barrier, False, rtmp3))
+    
 
     s1.start()
     s2.start()
