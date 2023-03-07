@@ -11,6 +11,8 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 import subprocess
 from numpy import random
 
+load_dotenv()
+
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0] / 'Yolov7_StrongSORT_OSNet'
 WEIGHTS = FILE.parents[0] / 'weights'
@@ -118,7 +120,6 @@ class StreamTracking:
         self.dnn = dnn
 
         # Setup Influx DB Client
-        load_dotenv()
         self.url = os.getenv('INFLUX_URL')
         self.token = os.getenv('INFLUX_TOKEN')
         self.org = os.getenv('INFLUX_ORG')
@@ -130,23 +131,19 @@ class StreamTracking:
         # Setup ffmpeg process
         if self.rtmp_url is not None:
             self.rtmp_process = subprocess.Popen([
-                                      'ffmpeg', 
-                                      '-y', 
-                                      '-f', 
-                                      'rawvideo', 
-                                      '-pix_fmt', 
-                                      'bgr24', 
-                                      '-s', 
-                                      '360x288',  
-                                      '-i', 
-                                      '-',
-                                      '-fps_mode',
-                                      'cfr',
-                                      '-f', 
-                                      'flv', 
-                                      self.rtmp_url], stdin=subprocess.PIPE)
-        
-
+                'ffmpeg',
+                '-y',
+                '-f',
+                'rawvideo',
+                '-pix_fmt',
+                'bgr24',
+                '-s',
+                '360x288',
+                '-i',
+                '-',
+                '-f',
+                'flv',
+                self.rtmp_url], stdin=subprocess.PIPE)
 
         # Organise Data
         self.save_img = not self.nosave and not self.source.endswith('.txt')
@@ -376,8 +373,6 @@ class StreamTracking:
 
                 prev_frames[i] = curr_frames[i]
 
-
-            
             self.mp_barrier.wait()
 
         t = tuple(x / seen * 1E3 for x in dt)
@@ -388,7 +383,7 @@ class StreamTracking:
             print(f"Results saved to {colorstr('bold', self.save_dir)}{s}")
         if self.update:
             strip_optimizer(self.yolo_weights)
-    
+
         self.rtmp_process.stdin.close()
         self.rtmp_process.wait()
 
@@ -431,19 +426,15 @@ if __name__ == '__main__':
     check_requirements(requirements=ROOT / 'requirements.txt',
                        exclude=('tensorboard', 'thop'))
 
-    rtmp1 = 'rtmp://34.107.58.127:1935/live/588fa378-3ac9-4abb-bb3a-7539ce0b0801'
-    rtmp2 = 'rtmp://34.107.58.127:1935/live/588fa378-3ac9-4abb-bb3a-7539ce0b0802'
-    rtmp3 = 'rtmp://34.107.58.127:1935/live/588fa378-3ac9-4abb-bb3a-7539ce0b0803'
-
     mp_barrier = Barrier(3)
     s1 = Process(target=run_stream, args=(
-        1, './data/campus/campus4-c0.avi', '0', mp_barrier, False, rtmp1))
-    
+        1, os.getenv('VIDEO_INPUT_1'), os.getenv('PROCESS_HARDWARE_1'), mp_barrier, False, os.getenv('VIDEO_OUTPUT_1')))
+
     s2 = Process(target=run_stream, args=(
-        2, './data/campus/campus4-c1.avi', '0', mp_barrier, False, rtmp2))
+        2, os.getenv('VIDEO_INPUT_2'), os.getenv('PROCESS_HARDWARE_2'), mp_barrier, False, os.getenv('VIDEO_OUTPUT_2')))
+
     s3 = Process(target=run_stream, args=(
-        3, './data/campus/campus4-c2.avi', '0', mp_barrier, False, rtmp3))
-    
+        3, os.getenv('VIDEO_INPUT_3'), os.getenv('PROCESS_HARDWARE_3'), mp_barrier, False, os.getenv('VIDEO_OUTPUT_3')))
 
     s1.start()
     s2.start()
