@@ -59,6 +59,7 @@ class StreamTracking:
                  mp_barrier,
                  yolo_weights,  # model.pt path(s),
                  strong_sort_weights,
+                 rtmp_enable=False,
                  rtmp_url=None,  # model.pt path,
                  imgsz=(640, 640),  # inference size (height, width)
                  conf_thres=0.25,  # confidence threshold
@@ -66,6 +67,7 @@ class StreamTracking:
                  max_det=1000,  # maximum detections per image
                  device='0',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
                  show_vid=True,  # show results
+                 show_matplot=False,
                  save_txt=False,  # save results to *.txt
                  save_conf=False,  # save confidences in --save-txt labels
                  save_crop=False,  # save cropped prediction boxes
@@ -89,6 +91,7 @@ class StreamTracking:
 
         self.stream_id = stream_id
         self.source = str(source)
+        self.rtmp_enable = rtmp_enable
         self.rtmp_url = rtmp_url
         self.mp_barrier = mp_barrier
         self.yolo_weights = yolo_weights
@@ -99,6 +102,7 @@ class StreamTracking:
         self.max_det = max_det
         self.device = str(device)
         self.show_vid = show_vid
+        self.show_matplot = show_matplot
         self.save_txt = save_txt
         self.save_conf = save_conf
         self.save_crop = save_crop
@@ -129,7 +133,7 @@ class StreamTracking:
         self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
 
         # Setup ffmpeg process
-        if self.rtmp_url is not None:
+        if self.rtmp_url is not None and self.rtmp_enable:
             self.rtmp_process = subprocess.Popen([
                 'ffmpeg',
                 '-y',
@@ -351,7 +355,7 @@ class StreamTracking:
                     cv2.imshow(str(p), im0)
                     cv2.waitKey(1)
 
-                if self.rtmp_url is not None:
+                if self.rtmp_url is not None and self.rtmp_enable:
                     frame_bytes = im0.tostring()
                     self.rtmp_process.stdin.write(frame_bytes)
 
@@ -384,8 +388,9 @@ class StreamTracking:
         if self.update:
             strip_optimizer(self.yolo_weights)
 
-        self.rtmp_process.stdin.close()
-        self.rtmp_process.wait()
+        if self.rtmp_url is not None and self.rtmp_enable:
+            self.rtmp_process.stdin.close()
+            self.rtmp_process.wait()
 
 
 def plot_one_box(x, img, color=None, label=None, line_thickness=3):
@@ -407,16 +412,18 @@ def plot_one_box(x, img, color=None, label=None, line_thickness=3):
                     [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
 
 
-def run_stream(stream_id, stream_url, device, mp_barrier, show_vid=False, rtmp_url=None):
+def run_stream(stream_id, barrier, stream_url, device, show_vid=False, show_matplot=False, rtmp_enable=False, rtmp_url=None):
     print(f'Running stream {stream_id}')
     d = StreamTracking(stream_id,
                        stream_url,
+                       rtmp_enable=rtmp_enable,
                        rtmp_url=rtmp_url,
                        yolo_weights=WEIGHTS / 'yolov7.pt',
                        strong_sort_weights=WEIGHTS / 'osnet_x0_75_msmt17.pt',
-                       mp_barrier=mp_barrier,
+                       mp_barrier=barrier,
                        device=device,
-                       show_vid=show_vid)
+                       show_vid=show_vid,
+                       show_matplot=show_matplot)
     d.run()
 
 
@@ -428,13 +435,34 @@ if __name__ == '__main__':
 
     mp_barrier = Barrier(3)
     s1 = Process(target=run_stream, args=(
-        1, os.getenv('VIDEO_INPUT_1'), os.getenv('PROCESS_HARDWARE_1'), mp_barrier, False, os.getenv('VIDEO_OUTPUT_1')))
+        1,
+        mp_barrier,
+        os.getenv('VIDEO_INPUT_1'),
+        os.getenv('PROCESS_HARDWARE_1'),
+        eval(os.getenv('PROCESS_SHOW_VIDEO', 'False')),
+        eval(os.getenv('PROCESS_SHOW_MATPLOTLIB', 'False')),
+        eval(os.getenv('VIDEO_OUTPUT_ENABLE', 'False')),
+        os.getenv('VIDEO_OUTPUT_1')))
 
     s2 = Process(target=run_stream, args=(
-        2, os.getenv('VIDEO_INPUT_2'), os.getenv('PROCESS_HARDWARE_2'), mp_barrier, False, os.getenv('VIDEO_OUTPUT_2')))
+        2,
+        mp_barrier,
+        os.getenv('VIDEO_INPUT_2'),
+        os.getenv('PROCESS_HARDWARE_2'),
+        eval(os.getenv('PROCESS_SHOW_VIDEO', 'False')),
+        eval(os.getenv('PROCESS_SHOW_MATPLOTLIB', 'False')),
+        eval(os.getenv('VIDEO_OUTPUT_ENABLE', 'False')),
+        os.getenv('VIDEO_OUTPUT_2')))
 
     s3 = Process(target=run_stream, args=(
-        3, os.getenv('VIDEO_INPUT_3'), os.getenv('PROCESS_HARDWARE_3'), mp_barrier, False, os.getenv('VIDEO_OUTPUT_3')))
+        3,
+        mp_barrier,
+        os.getenv('VIDEO_INPUT_3'),
+        os.getenv('PROCESS_HARDWARE_3'),
+        eval(os.getenv('PROCESS_SHOW_VIDEO', 'False')),
+        eval(os.getenv('PROCESS_SHOW_MATPLOTLIB', 'False')),
+        eval(os.getenv('VIDEO_OUTPUT_ENABLE', 'False')),
+        os.getenv('VIDEO_OUTPUT_3')))
 
     s1.start()
     s2.start()
