@@ -1,15 +1,15 @@
-# Lilith-FlowTracker
+# moni
 
 Our project repository for the hackathon Thurgau challenge.
 
 ## Setup Repository
 
 ```console
-git clone git@github.com:JohnTrunix/Lilith-FlowTracker.git
+git clone git@github.com:JohnTrunix/moni.git
 ```
 
 ```console
-cd Lilith-FlowTracker
+cd moni
 ```
 
 ```console
