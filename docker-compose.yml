@@ -1,9 +1,10 @@
 version: '3'
 
 services:
-    lilith:
+    moni:
         build: .
-        container_name: lilith
+        container_name: moni
+        profiles: ['moni', 'dev']
         restart: unless-stopped
         security_opt:
             - no-new-privileges:true
@@ -25,6 +26,7 @@ services:
     influxdb:
         image: influxdb:2.6.1-alpine
         container_name: influxdb
+        profiles: ['influxdb', 'dev']
         restart: unless-stopped
         security_opt:
             - no-new-privileges:true
@@ -33,9 +35,10 @@ services:
         ports:
             - 8086:8086/tcp
 
-    rtmp-server:
+    rtmp:
         image: alqutami/rtmp-hls:latest-alpine
-        container_name: rtmp-server
+        container_name: rtmp
+        profiles: ['rtmp', 'dev']
         restart: unless-stopped
         security_opt:
             - no-new-privileges:true
