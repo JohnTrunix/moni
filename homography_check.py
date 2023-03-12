@@ -17,7 +17,6 @@ client = InfluxDBClient(url=url, token=token, org=org)
 read_api = client.query_api()
 
 
-
 H1 = np.array([[-1.6688907435, -6.9502305710, 940.69592392565],
                [1.1984806153, -10.7495778320, 868.29873467315],
                [0.0004069210, -0.0209324057, 0.42949125235]])
@@ -29,8 +28,9 @@ H2 = np.array([[0.6174778372, -0.4836875683, 147.00510919005],
 
 
 H3 = np.array([[-0.2717592338, 1.0286363982, -17.6643219215],
-                [-0.1373600672, -0.3326731339, 161.0109069274],
-                [0.0000600052, 0.0030858398, -0.04195162855]])
+               [-0.1373600672, -0.3326731339, 161.0109069274],
+               [0.0000600052, 0.0030858398, -0.04195162855]])
+
 
 def get_frame_data(i):
     query = f'from(bucket: "{bucket}") \
@@ -39,18 +39,23 @@ def get_frame_data(i):
             |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value") \
             |> keep(columns: ["frame", "id", "stream", "x", "y"])'
 
-
     table = read_api.query_data_frame(query)
     if table.empty:
         return 0, 0, 0, 0, 0, 0
 
-    x1 = table[table['stream'] == '1']['x'].values if not table[table['stream'] == '1'].empty else 0
-    y1 = table[table['stream'] == '1']['y'].values if not table[table['stream'] == '1'].empty else 0
-    x2 = table[table['stream'] == '2']['x'].values if not table[table['stream'] == '2'].empty else 0
-    y2 = table[table['stream'] == '2']['y'].values if not table[table['stream'] == '2'].empty else 0
-    x3 = table[table['stream'] == '3']['x'].values if not table[table['stream'] == '3'].empty else 0
-    y3 = table[table['stream'] == '3']['y'].values if not table[table['stream'] == '3'].empty else 0
-    
+    x1 = table[table['stream'] ==
+               '1']['x'].values if not table[table['stream'] == '1'].empty else 0
+    y1 = table[table['stream'] ==
+               '1']['y'].values if not table[table['stream'] == '1'].empty else 0
+    x2 = table[table['stream'] ==
+               '2']['x'].values if not table[table['stream'] == '2'].empty else 0
+    y2 = table[table['stream'] ==
+               '2']['y'].values if not table[table['stream'] == '2'].empty else 0
+    x3 = table[table['stream'] ==
+               '3']['x'].values if not table[table['stream'] == '3'].empty else 0
+    y3 = table[table['stream'] ==
+               '3']['y'].values if not table[table['stream'] == '3'].empty else 0
+
     return x1, y1, x2, y2, x3, y3
 
 
@@ -83,10 +88,8 @@ def plot(frame1, frame2, frame3, np_p1, np_p2, np_p3, pw1, pw2, pw3):
     plt.xlim(-1000, 1000)
     plt.ylim(-1000, 1000)
 
-
     plt.draw()
     plt.pause(0.001)
-
 
 
 cap1 = cv2.VideoCapture('./data/terrace/terrace1-c0.avi')
@@ -104,15 +107,11 @@ for i in range(200, 5000):
     pw2 = image_to_world_point(np_p2, H2)
     pw3 = image_to_world_point(np_p3, H3)
 
-
-
     cap1.set(cv2.CAP_PROP_POS_FRAMES, i)
     ret1, frame1 = cap1.read()
 
-
     cap2.set(cv2.CAP_PROP_POS_FRAMES, i)
     ret2, frame2 = cap2.read()
-
 
     cap3.set(cv2.CAP_PROP_POS_FRAMES, i)
     ret3, frame3 = cap3.read()
@@ -122,6 +121,4 @@ for i in range(200, 5000):
     print('eucl distance pw2-pw3: ', np.linalg.norm(pw2 - pw3))
     print('------------------------------------------------')
 
-
     plot(frame1, frame2, frame3, np_p1, np_p2, np_p3, pw1, pw2, pw3)
-
