@@ -123,14 +123,15 @@ class StreamTracking:
         self.half = half
         self.dnn = dnn
 
-        # Setup Influx DB Client
-        self.url = os.getenv('INFLUX_URL')
-        self.token = os.getenv('INFLUX_TOKEN')
-        self.org = os.getenv('INFLUX_ORG')
-        self.bucket = os.getenv('INFLUX_BUCKET')
-        self.client = InfluxDBClient(
-            url=self.url, token=self.token, org=self.org)
-        self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
+        # Setup Influx DB Client if enabled
+        if (os.getenv('INFLUX_ENABLE', 'False') == 'True'):
+            self.url = os.getenv('INFLUX_URL')
+            self.token = os.getenv('INFLUX_TOKEN')
+            self.org = os.getenv('INFLUX_ORG')
+            self.bucket = os.getenv('INFLUX_BUCKET')
+            self.client = InfluxDBClient(
+                url=self.url, token=self.token, org=self.org)
+            self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
 
         # Setup ffmpeg process
         if self.rtmp_url is not None and self.rtmp_enable:
@@ -323,8 +324,11 @@ class StreamTracking:
                             point = Point('person').tag('stream', self.stream_id
                                                         ).tag('frame', frame_idx).tag('id', id
                                                                                       ).field('x', int((bboxes[0] + bboxes[2]) / 2)
+
                                                                                               ).field('y', int(bboxes[3]))
-                            self.write_api.write(self.bucket, record=point)
+                            # Write to influx if enabled
+                            if (os.getenv('INFLUX_ENABLE', 'False') == 'True'):
+                                self.write_api.write(self.bucket, record=point)
 
                             if self.save_txt:
                                 bbox_left = output[0]
