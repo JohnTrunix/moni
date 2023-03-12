@@ -1,40 +1,40 @@
 flags:
-    save_influx: True
-    rtmp_output: True
-    show_video: False
-    show_matplot: False
+    show_video: True # show video with cv2
+    save_influx: True # save detection position data in influxdb
+    rtmp_output: False # stream video to rtmp server (with bounding boxes)
+    show_matplot: False # show live coordinates with matplotlib
 
 general:
-    classes: [0]
+    classes: [0] # classes to detect (0 = person)
 
-hardware:
-    device_1: 0
-    device_2: 1
-    device_3: 2
+hardware: # gpu or cpu devices for every single stream ('cpu', 0, 1, 2, ...)
+    device_1: 0 # stream 1 -> 1st gpu device
+    device_2: 1 # stream 2 -> 2nd gpu device
+    device_3: 2 # stream 3 -> 3rd gpu device
 
 rtmp:
     input:
-        video_1: "./data/campus/campus4-c0.avi"
-        video_2: "./data/campus/campus4-c1.avi"
-        video_3: "./data/campus/campus4-c2.avi"
+        video_1: "./data/campus/campus4-c0.avi" # video path for stream 1
+        video_2: "./data/campus/campus4-c1.avi" # video path for stream 2
+        video_3: "./data/campus/campus4-c2.avi" # video path for stream 3
     output:
-        video_1: "rtmp://localhost:1935/live/588fa378-3ac9-4abb-bb3a-7539ce0b0821"
-        video_2: "rtmp://localhost:1935/live/588fa378-3ac9-4abb-bb3a-7539ce0b0822"
-        video_3: "rtmp://localhost:1935/live/588fa378-3ac9-4abb-bb3a-7539ce0b0823"
+        video_1: "rtmp://localhost:1935/live/588fa378-3ac9-4abb-bb3a-7539ce0b0821" # rtmp output for stream 1
+        video_2: "rtmp://localhost:1935/live/588fa378-3ac9-4abb-bb3a-7539ce0b0822" # rtmp output for stream 2
+        video_3: "rtmp://localhost:1935/live/588fa378-3ac9-4abb-bb3a-7539ce0b0823" # rtmp output for stream 3
 
 influxdb:
-    url: http://localhost:8086
-    token: SECRET
-    org: hackathon-thurgau
-    bucket: position_data
+    url: http://localhost:8086 # influxdb url
+    token: SECRET # influxdb token
+    org: hackathon-thurgau # influxdb org
+    bucket: position_data # influxdb bucket
 
 yolo:
-    weights: "./weights/yolov7.pt"
-    conf_thres: 0.25
-    iou_thres: 0.45
+    weights: "./weights/yolov7.pt" # yolov7 weights
+    conf_thres: 0.25 # confidence threshold
+    iou_thres: 0.45 # NMS IoU threshold
 
 strongsort:
-    weights: "./weights/osnet_x0_75_msmt17.pt"
+    weights: "./weights/osnet_x0_75_msmt17.pt" # strongsort weights
     config:
         ECC: False # activate camera motion compensation
         MC_LAMBDA: 0.995 # matching with both appearance (1 - MC_LAMBDA) and motion cost

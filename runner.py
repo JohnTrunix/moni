@@ -113,7 +113,7 @@ def run_moni(
     is_webcam = source.isnumeric() or (is_url and not is_file)
 
     #---------------------- Load Yolo Model ----------------------#
-    device = select_device(device)
+    device = select_device(str(device))
     WEIGHTS.mkdir(parents=True, exist_ok=True)
     model = attempt_load(Path(yolo_weights), map_location=device)
     names = model.names
