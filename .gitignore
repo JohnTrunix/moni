@@ -1,8 +1,13 @@
 # Custom rules for the project
 data/
 weights/
+
 *.pt
 *.exe
+
+# ignore all config .yml files except example-config.yml
+conf/*
+!conf/example-config.yml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

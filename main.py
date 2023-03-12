@@ -6,22 +6,14 @@ from multiprocessing import Process, Barrier
 check_packages('./requirements.txt')
 
 '''
-run_moni(
+def run_moni(
         stream_id,
         source,
-        yolo_weights,
-        strong_sort_weights,
-        mp_barrier,
+        yaml_config,
+        mp_barrier=None,  # multiprocessing barrier object for synchronization
         device='0',
         imgsz=(640, 640),
-        conf_thres=0.25,
-        iou_thres=0.45,
-        classes=[0],  # only detect and track persons (class 0)
-        rtmp_enable=False,  # enable output stream to rtmp server
-        rtmp_url=None,  # rtmp server url
-        show_vid=True,  # shows video ouput with cv2
-        show_plot=False,  # live plot output
-        save_influx=False,  # save data to influxdb
+        rtmp_url=None,
         line_thickness=2,  # bounding boxes line thickness
         hide_labels=False,
         hide_conf=True,

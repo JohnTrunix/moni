@@ -1,0 +1,46 @@
+flags:
+    save_influx: True
+    rtmp_output: True
+    show_video: False
+    show_matplot: False
+
+general:
+    classes: [0]
+
+hardware:
+    device_1: 0
+    device_2: 1
+    device_3: 2
+
+rtmp:
+    input:
+        video_1: "./data/campus/campus4-c0.avi"
+        video_2: "./data/campus/campus4-c1.avi"
+        video_3: "./data/campus/campus4-c2.avi"
+    output:
+        video_1: "rtmp://localhost:1935/live/588fa378-3ac9-4abb-bb3a-7539ce0b0821"
+        video_2: "rtmp://localhost:1935/live/588fa378-3ac9-4abb-bb3a-7539ce0b0822"
+        video_3: "rtmp://localhost:1935/live/588fa378-3ac9-4abb-bb3a-7539ce0b0823"
+
+influxdb:
+    url: http://localhost:8086
+    token: SECRET
+    org: hackathon-thurgau
+    bucket: position_data
+
+yolo:
+    weights: "./weights/yolov7.pt"
+    conf_thres: 0.25
+    iou_thres: 0.45
+
+strongsort:
+    weights: "./weights/osnet_x0_75_msmt17.pt"
+    config:
+        ECC: False # activate camera motion compensation
+        MC_LAMBDA: 0.995 # matching with both appearance (1 - MC_LAMBDA) and motion cost
+        EMA_ALPHA: 0.9 # updates  appearance  state in  an exponential moving average manner
+        MAX_DIST: 0.2 # The matching threshold. Samples with larger distance are considered an invalid match
+        MAX_IOU_DISTANCE: 0.7 # Gating threshold. Associations with cost larger than this value are disregarded.
+        MAX_AGE: 1000 # Maximum number of missed misses before a track is deleted
+        N_INIT: 3 # Number of frames that a track remains in initialization phase
+        NN_BUDGET: 100 # Maximum size of the appearance descriptors gallery

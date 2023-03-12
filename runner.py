@@ -2,6 +2,7 @@
 import os
 import sys
 from pathlib import Path
+import yaml
 
 import numpy as np
 import random
@@ -49,19 +50,11 @@ VID_FORMATS = 'asf', 'avi', 'gif', 'm4v', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 't
 def run_moni(
         stream_id,
         source,
-        yolo_weights,
-        strong_sort_weights,
+        yaml_config,
         mp_barrier=None,  # multiprocessing barrier object for synchronization
         device='0',
         imgsz=(640, 640),
-        conf_thres=0.25,
-        iou_thres=0.45,
-        classes=[0],  # only detect and track persons (class 0)
-        rtmp_enable=False,  # enable output stream to rtmp server
-        rtmp_url=None,  # rtmp server url
-        show_vid=True,  # shows video ouput with cv2
-        show_plot=False,  # live plot output
-        save_influx=False,  # save data to influxdb
+        rtmp_url=None,
         line_thickness=2,  # bounding boxes line thickness
         hide_labels=False,
         hide_conf=True,
@@ -69,7 +62,29 @@ def run_moni(
         half=False  # convert 32-bit tensor to 16-bit
 ):
 
-    # initialize InfluxDB_writer if save_influx is True
+    #---------------------- Load Configs from .yml file ----------------------#
+    with open(yaml_config, 'r') as f:
+        config = yaml.load(f, Loader=yaml.FullLoader)
+
+    # general flags
+    save_influx = config['flags']['save_influx']
+    rtmp_output = config['flags']['rtmp_output']
+    show_video = config['flags']['show_video']
+    show_matplot = config['flags']['show_matplot']
+
+    # general configs
+    classes = config['general']['classes']
+
+    # yolo configs
+    yolo_weights = config['yolo']['weights']
+    conf_thres = config['yolo']['conf_thres']
+    iou_thres = config['yolo']['iou_thres']
+
+    # strong sort configs
+    strong_sort_weights = config['strong_sort']['weights']
+    strong_sort_config = config['strong_sort']['config']
+
+    #---------------------- Initialize Objects ----------------------#
     if save_influx:
         '''
         ToDo: Load Config from .yml file
@@ -81,8 +96,8 @@ def run_moni(
             bucket=os.getenv('INFLUXDB_BUCKET')
         )
 
-    # initialize rtmp stream writer if rtmp_enable is True and rtmp_url is not None
-    if rtmp_enable:
+    # initialize rtmp stream writer if rtmp_output is True and rtmp_url is not None
+    if rtmp_output:
         if rtmp_url is None:
             raise ValueError('rtmp_url is None')
         else:
@@ -92,12 +107,12 @@ def run_moni(
             rtmp_process = subprocess.Popen(
                 ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-pix_fmt', 'bgr24', '-s', f'{imgsz[0]}x{imgsz[1]}', '-i', '-', '-f', 'flv', rtmp_url], stdin=subprocess.PIPE)
 
-    # setup configs for stream processing
+    #---------------------- Get File Type ----------------------#
     is_file = Path(source).suffix[1:] in VID_FORMATS
     is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
     is_webcam = source.isnumeric() or (is_url and not is_file)
 
-    # load yolov7 model
+    #---------------------- Load Yolo Model ----------------------#
     device = select_device(device)
     WEIGHTS.mkdir(parents=True, exist_ok=True)
     model = attempt_load(Path(yolo_weights), map_location=device)
@@ -105,16 +120,27 @@ def run_moni(
     stride = model.stride.max().cpu().numpy()
     imgsz = check_img_size(imgsz, s=stride)
 
-    # load strong sort model
+    #---------------------- Load Strong Sort Model ----------------------#
     '''
     ToDo: Correctly load strong sort model and make detections shared between processes
     '''
-    cfg = get_config()
-    strong_sort = StrongSORT(cfg, Path(strong_sort_weights))
+    strong_sort = StrongSORT(
+                        strong_sort_weights, 
+                        device, 
+                        half, 
+                        max_dist=strong_sort_config['MAX_DIST'],
+                        max_iou_distance=strong_sort_config['MAX_IOU_DISTANCE'],
+                        max_age=strong_sort_config['MAX_AGE'],
+                        n_init=strong_sort_config['N_INIT'],
+                        nn_budget=strong_sort_config['NN_BUDGET'],
+                        mc_lambda=strong_sort_config['MC_LAMBDA'],
+                        ema_alpha=strong_sort_config['EMA_ALPHA'],
+                    )
+
     outputs = [None]
     colors = [[random.randint(0, 255) for _ in range(3)] for _ in names]
 
-    # load stream or video/images
+    #---------------------- Load Video Stream ----------------------#
     if is_webcam:
         cudnn.benchmark = True
         dataset = LoadStreams(source, img_size=imgsz, stride=stride)
@@ -218,19 +244,19 @@ def run_moni(
                 strong_sort.increment_ages()
                 print('No detections')
 
-            if show_vid:
+            if show_video:
                 cv2.imshow(str(p), im0)
                 cv2.waitKey(1)
 
-            if rtmp_enable:
+            if rtmp_output:
                 fb = im0.tostring()
                 rtmp_process.stdin.write(fb)
 
-            if show_plot:
+            if show_matplot:
                 '''
                 Not Implemented yet: Plotting of detections in images and global coordinates
                 '''
-                pass
+                raise NotImplementedError('Matplotlib live visualisations not implemented yet')
 
         #---------------------- Update previous frames ----------------------#
             prev_frames[i] = curr_frames[i]
@@ -238,7 +264,7 @@ def run_moni(
         if mp_barrier is not None:
             mp_barrier.wait()
 
-    if rtmp_enable:
+    if rtmp_output:
         rtmp_process.stdin.close()
         rtmp_process.wait()
 
