@@ -186,10 +186,8 @@ def run_moni(
             curr_frames[i] = im0
             s += f'{im.shape[2]}x{im.shape[3]} '
 
-            '''
-            ToDo: with .yaml config file
-            '''
-            if (os.getenv('STRONGSORT_ECC') == 'True'):
+
+            if strong_sort_config['ECC']:
                 strong_sort.tracker.camera_update(
                     prev_frames[i], curr_frames[i])
 
