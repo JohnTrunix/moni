@@ -1,11 +1,14 @@
+from runner_utils import check_packages
+check_packages('./requirements.txt')
+
+
 import yaml
 from runner import run_moni
-from runner_utils import check_packages
 
 from multiprocessing import Process, Barrier
 
-check_packages('./requirements.txt')
 
+#----------------- Function Documentation -----------------#
 '''
 def run_moni(
         stream_id,
