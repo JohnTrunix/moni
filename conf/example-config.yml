@@ -3,6 +3,7 @@ flags:
     save_influx: True # save detection position data in influxdb
     rtmp_output: False # stream video to rtmp server (with bounding boxes)
     show_matplot: False # show live coordinates with matplotlib
+    detections_to_global: False # transform detections coordinates to global coordinates (transformation matrix must be set)
 
 general:
     classes: [0] # classes to detect (0 = person)
@@ -17,6 +18,24 @@ rtmp:
         video_1: "./data/campus/campus4-c0.avi" # video path for stream 1
         video_2: "./data/campus/campus4-c1.avi" # video path for stream 2
         video_3: "./data/campus/campus4-c2.avi" # video path for stream 3
+        t_matrix_1: # transformation matrix for stream 1
+            [
+                [-0.211332, -0.405226, 70.781223],
+                [-0.019746, -1.564936, 226.377280],
+                [-0.000025, -0.001961, 0.160791],
+            ]
+        t_matrix_2: # transformation matrix for stream 2
+            [
+                [0.000745, 0.350335, -98.376103],
+                [-0.164871, -0.390422, 54.081423],
+                [0.000021, -0.001668, 0.111075],
+            ]
+        t_matrix_3: # transformation matrix for stream 3
+            [
+                [0.089976, 1.066795, -152.055667],
+                [-0.116343, 0.861342, -75.122116],
+                [0.000015, 0.001442, -0.064065],
+            ]
     output:
         video_1: "rtmp://localhost:1935/live/588fa378-3ac9-4abb-bb3a-7539ce0b0821" # rtmp output for stream 1
         video_2: "rtmp://localhost:1935/live/588fa378-3ac9-4abb-bb3a-7539ce0b0822" # rtmp output for stream 2

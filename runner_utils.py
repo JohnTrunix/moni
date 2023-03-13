@@ -1,5 +1,6 @@
 import sys
 import random
+import numpy as np
 import cv2
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
@@ -58,6 +59,14 @@ def plot_one_box(x, img, color=None, label=None, line_thickness=3):
         cv2.rectangle(img, c1, c2, color, -1, cv2.LINE_AA)  # filled
         cv2.putText(img, label, (c1[0], c1[1] - 2), 0, tl / 3,
                     [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
+
+
+def warpPoint(p, H):
+    px = (H[0][0] * p[0] + H[0][1] * p[1] + H[0][2]) / \
+        ((H[2][0] * p[0] + H[2][1] * p[1] + H[2][2]))
+    py = (H[1][0] * p[0] + H[1][1] * p[1] + H[1][2]) / \
+        ((H[2][0] * p[0] + H[2][1] * p[1] + H[2][2]))
+    return px, py
 
 
 def check_packages(requirements_path):
