@@ -49,11 +49,11 @@ def run_moni(
         stream_id,
         source,
         yaml_config,
+        mp_barrier,  # multiprocessing barrier object for synchronization
+        device, # Hardware device which is used for processing
+        rtmp_url,
         t_matrix=None,  # transformation matrix for perspective transform
-        mp_barrier=None,  # multiprocessing barrier object for synchronization
-        device='0',
         imgsz=(640, 640),
-        rtmp_url=None,
         line_thickness=2,  # bounding boxes line thickness
         hide_labels=False,
         hide_conf=True,
@@ -81,8 +81,11 @@ def run_moni(
     iou_thres = config['yolo']['iou_thres']
 
     # strong sort configs
-    strong_sort_weights = config['strong_sort']['weights']
-    strong_sort_config = config['strong_sort']['config']
+    strong_sort_weights = config['strongsort']['weights']
+    strong_sort_config = config['strongsort']['config']
+
+    # InfluxDB config
+    influx_config = config['influxdb']
 
     #---------------------- Initialize Objects ----------------------#
     if detections_to_global:
@@ -95,14 +98,11 @@ def run_moni(
 
 
     if save_influx:
-        '''
-        ToDo: Load Config from .yml file
-        '''
         influx_writer = InfluxDB_Writer(
-            url=os.getenv('INFLUXDB_URL'),
-            token=os.getenv('INFLUXDB_TOKEN'),
-            org=os.getenv('INFLUXDB_ORG'),
-            bucket=os.getenv('INFLUXDB_BUCKET')
+            url=influx_config['url'],
+            token=influx_config['token'],
+            org=influx_config['org'],
+            bucket=influx_config['bucket']
         )
 
     # initialize rtmp stream writer if rtmp_output is True and rtmp_url is not None
@@ -110,11 +110,8 @@ def run_moni(
         if rtmp_url is None:
             raise ValueError('rtmp_url is None')
         else:
-            '''
-            ToDo: Load Config from .yml file
-            '''
             rtmp_process = subprocess.Popen(
-                ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-pix_fmt', 'bgr24', '-s', f'{imgsz[0]}x{imgsz[1]}', '-i', '-', '-f', 'flv', rtmp_url], stdin=subprocess.PIPE)
+                ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-pix_fmt', 'bgr24', '-s', '360x288', '-i', '-', '-f', 'flv', rtmp_url], stdin=subprocess.PIPE)
 
     #---------------------- Get File Type ----------------------#
     is_file = Path(source).suffix[1:] in VID_FORMATS
@@ -127,7 +124,7 @@ def run_moni(
     model = attempt_load(Path(yolo_weights), map_location=device)
     names = model.names
     stride = model.stride.max().cpu().numpy()
-    imgsz = check_img_size(imgsz, s=stride)
+    imgsz = check_img_size(imgsz[0], s=stride)
 
     #---------------------- Load Strong Sort Model ----------------------#
     '''
@@ -253,6 +250,7 @@ def run_moni(
                                                             ).tag('id', id
                                                                     ).field('x', x_cord
                                                                             ).field('y', y_cord)
+
                             influx_writer.add(point)
 
                 print(

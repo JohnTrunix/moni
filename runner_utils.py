@@ -1,10 +1,9 @@
-import sys
 import random
-import numpy as np
+
 import cv2
+import pkg_resources
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
-import pkg_resources
 
 
 class InfluxDB_Writer:
