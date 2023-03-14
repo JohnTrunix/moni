@@ -1,7 +1,9 @@
 # Custom rules for the project
 data/
+images/
 weights/
 
+test.py
 *.pt
 *.exe
 

@@ -237,16 +237,13 @@ def run_moni(
 
                         #---------------------- Save to InfluxDB ----------------------#
                         if save_influx:
+                            x_cord = (bboxes[0] + bboxes[2]) / 2
+                            y_cord = bboxes[3]
+
+                            #---------------------- Transform detections to global coordinates ----------------------#
                             if detections_to_global:
-                                '''
-                                ToDo: Implement ground homography transformation (see homography_test.ipynb)
-                                '''
                                 d_cord = np.array([x_cord, y_cord])
                                 x_cord, y_cord = warpPoint(d_cord, t_matrix)
-
-                            else:
-                                x_cord = int((bboxes[0] + bboxes[2]) / 2)
-                                y_cord = int(bboxes[3])
 
                             point = Point(influx_config['field']).tag('stream', stream_id).tag('frame', frame_idx
                                                                 ).tag('id', id).field('x', x_cord).field('y', y_cord)

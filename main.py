@@ -59,7 +59,8 @@ s1 = Process(target=run_moni, args=(
     yml_config,
     mp_barrier,
     config['hardware']['device_1'],
-    config['rtmp']['output']['video_1']
+    config['rtmp']['output']['video_1'],
+    config['rtmp']['input']['t_matrix_1']
 ))
 
 
@@ -69,7 +70,8 @@ s2 = Process(target=run_moni, args=(
     yml_config,
     mp_barrier,
     config['hardware']['device_2'],
-    config['rtmp']['output']['video_2']
+    config['rtmp']['output']['video_2'],
+    config['rtmp']['input']['t_matrix_2']
 ))
 
 s3 = Process(target=run_moni, args=(
@@ -78,7 +80,8 @@ s3 = Process(target=run_moni, args=(
     yml_config,
     mp_barrier,
     config['hardware']['device_3'],
-    config['rtmp']['output']['video_3']
+    config['rtmp']['output']['video_3'],
+    config['rtmp']['input']['t_matrix_3']
 ))
 
 
