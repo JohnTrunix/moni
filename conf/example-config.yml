@@ -46,6 +46,7 @@ influxdb:
     token: SECRET # influxdb token
     org: hackathon-thurgau # influxdb org
     bucket: position_data # influxdb bucket
+    field: person # influxdb field
 
 yolo:
     weights: "./weights/yolov7.pt" # yolov7 weights

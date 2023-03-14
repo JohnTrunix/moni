@@ -9,13 +9,12 @@ services:
         security_opt:
             - no-new-privileges:true
         volumes:
+            - ./conf/docker-config.yml:/usr/src/app/config.yml:ro
             - ./data/campus/campus4-c0.avi:/usr/src/app/data/campus/campus4-c0.avi:ro
             - ./data/campus/campus4-c1.avi:/usr/src/app/data/campus/campus4-c1.avi:ro
             - ./data/campus/campus4-c2.avi:/usr/src/app/data/campus/campus4-c2.avi:ro
             - ./weights/yolov7.pt:/usr/src/app/weights/yolov7.pt:ro
             - ./weights/osnet_x0_75_msmt17.pt:/usr/src/app/weights/osnet_x0_75_msmt17.pt:ro
-        env_file:
-            - .env
         deploy:
             resources:
                 reservations:

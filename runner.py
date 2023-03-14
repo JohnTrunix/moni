@@ -13,8 +13,11 @@ import torch.backends.cudnn as cudnn
 from dotenv import load_dotenv
 import subprocess
 
-from runner_utils import InfluxDB_Writer, plot_one_box, warpPoint
-from influxdb_client import Point
+from runner_utils import plot_one_box, warpPoint
+from influxdb_client import InfluxDBClient, Point
+from influxdb_client.client.write_api import SYNCHRONOUS
+
+
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0] / 'Yolov7_StrongSORT_OSNet'
@@ -49,11 +52,11 @@ def run_moni(
         stream_id,
         source,
         yaml_config,
+        mp_barrier,  # multiprocessing barrier object for synchronization
+        device, # Hardware device which is used for processing
+        rtmp_url,
         t_matrix=None,  # transformation matrix for perspective transform
-        mp_barrier=None,  # multiprocessing barrier object for synchronization
-        device='0',
         imgsz=(640, 640),
-        rtmp_url=None,
         line_thickness=2,  # bounding boxes line thickness
         hide_labels=False,
         hide_conf=True,
@@ -81,8 +84,11 @@ def run_moni(
     iou_thres = config['yolo']['iou_thres']
 
     # strong sort configs
-    strong_sort_weights = config['strong_sort']['weights']
-    strong_sort_config = config['strong_sort']['config']
+    strong_sort_weights = config['strongsort']['weights']
+    strong_sort_config = config['strongsort']['config']
+
+    # InfluxDB config
+    influx_config = config['influxdb']
 
     #---------------------- Initialize Objects ----------------------#
     if detections_to_global:
@@ -95,26 +101,23 @@ def run_moni(
 
 
     if save_influx:
-        '''
-        ToDo: Load Config from .yml file
-        '''
-        influx_writer = InfluxDB_Writer(
-            url=os.getenv('INFLUXDB_URL'),
-            token=os.getenv('INFLUXDB_TOKEN'),
-            org=os.getenv('INFLUXDB_ORG'),
-            bucket=os.getenv('INFLUXDB_BUCKET')
-        )
+        influx_writer = InfluxDBClient(
+                            url = influx_config['url'],
+                            token = influx_config['token'],
+                            org = influx_config['org'],
+                            bucket = influx_config['bucket']).write_api(write_options=SYNCHRONOUS)
 
     # initialize rtmp stream writer if rtmp_output is True and rtmp_url is not None
     if rtmp_output:
         if rtmp_url is None:
             raise ValueError('rtmp_url is None')
         else:
-            '''
-            ToDo: Load Config from .yml file
-            '''
+            frame_size = cv2.VideoCapture(source)
+            frame_w = int(frame_size.get(cv2.CAP_PROP_FRAME_WIDTH))
+            frame_h = int(frame_size.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            frame_size.release()
             rtmp_process = subprocess.Popen(
-                ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-pix_fmt', 'bgr24', '-s', f'{imgsz[0]}x{imgsz[1]}', '-i', '-', '-f', 'flv', rtmp_url], stdin=subprocess.PIPE)
+                ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-pix_fmt', 'bgr24', '-s', f'{frame_w}x{frame_h}', '-i', '-', '-f', 'flv', rtmp_url], stdin=subprocess.PIPE)
 
     #---------------------- Get File Type ----------------------#
     is_file = Path(source).suffix[1:] in VID_FORMATS
@@ -127,7 +130,7 @@ def run_moni(
     model = attempt_load(Path(yolo_weights), map_location=device)
     names = model.names
     stride = model.stride.max().cpu().numpy()
-    imgsz = check_img_size(imgsz, s=stride)
+    imgsz = check_img_size(imgsz[0], s=stride)
 
     #---------------------- Load Strong Sort Model ----------------------#
     '''
@@ -234,10 +237,6 @@ def run_moni(
 
                         #---------------------- Save to InfluxDB ----------------------#
                         if save_influx:
-
-                            x_cord = np.array([int((bboxes[0] + bboxes[2]) / 2)])
-                            y_cord = np.array([int(bboxes[3])])
-
                             if detections_to_global:
                                 '''
                                 ToDo: Implement ground homography transformation (see homography_test.ipynb)
@@ -245,21 +244,17 @@ def run_moni(
                                 d_cord = np.array([x_cord, y_cord])
                                 x_cord, y_cord = warpPoint(d_cord, t_matrix)
 
+                            else:
+                                x_cord = int((bboxes[0] + bboxes[2]) / 2)
+                                y_cord = int(bboxes[3])
 
-                                raise NotImplementedError('perspective transformation not implemented yet')
+                            point = Point(influx_config['field']).tag('stream', stream_id).tag('frame', frame_idx
+                                                                ).tag('id', id).field('x', x_cord).field('y', y_cord)
 
-                            point = Point('person').tag('stream', stream_id
-                                                        ).tag('frame', frame_idx
-                                                            ).tag('id', id
-                                                                    ).field('x', x_cord
-                                                                            ).field('y', y_cord)
-                            influx_writer.add(point)
+                            influx_writer.write(bucket=influx_config['bucket'], org=influx_config['org'], record=point)
 
                 print(
                     f'{s}Done. YOLOv7:({t3 - t2:.3f}s) NMS:({t4 - t3:.3f}s) SORT:({t6 - t5:.3f}s)')
-
-                if save_influx:
-                    influx_writer.write()
 
             else:
                 strong_sort.increment_ages()

@@ -20,4 +20,7 @@ RUN git submodule update --init --recursive
 
 # Set up and run python3
 COPY main.py main.py
-CMD ["python3","-u","main.py"]
+COPY runner.py runner.py
+COPY runner_utils.py runner_utils.py
+
+CMD ["python3","-u","main.py","--c", "./config.yml"]
