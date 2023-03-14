@@ -1,43 +1,6 @@
 import random
-
 import cv2
 import pkg_resources
-from influxdb_client import InfluxDBClient, Point
-from influxdb_client.client.write_api import SYNCHRONOUS
-
-
-class InfluxDB_Writer:
-    '''
-    Simple class to write data to influxdb
-
-    :param url: str - influxdb url
-    :param token: str - influxdb token
-    :param org: str - influxdb org
-    :param bucket: str - influxdb bucket
-
-    :return: None
-    '''
-
-    def __init__(self, url: str, token: str, org: str, bucket: str):
-        self.client = InfluxDBClient(url=url, token=token, org=org)
-        self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
-        self.org = org
-        self.bucket = bucket
-        self.points = []
-
-    def add(self, point: Point):
-        self.points.append(point)
-
-    def write(self):
-        self.write_api.write(bucket=self.bucket,
-                             org=self.org, record=self.points)
-        self.points.clear()
-
-    def close(self):
-        try:
-            self.client.close()
-        except Exception as e:
-            print(e)
 
 
 def plot_one_box(x, img, color=None, label=None, line_thickness=3):
