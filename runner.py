@@ -13,8 +13,11 @@ import torch.backends.cudnn as cudnn
 from dotenv import load_dotenv
 import subprocess
 
-from runner_utils import InfluxDB_Writer, plot_one_box, warpPoint
-from influxdb_client import Point
+from runner_utils import plot_one_box, warpPoint
+from influxdb_client import InfluxDBClient, Point
+from influxdb_client.client.write_api import SYNCHRONOUS
+
+
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0] / 'Yolov7_StrongSORT_OSNet'
@@ -98,12 +101,11 @@ def run_moni(
 
 
     if save_influx:
-        influx_writer = InfluxDB_Writer(
-            url=influx_config['url'],
-            token=influx_config['token'],
-            org=influx_config['org'],
-            bucket=influx_config['bucket']
-        )
+        influx_writer = InfluxDBClient(
+                            url = influx_config['url'],
+                            token = influx_config['token'],
+                            org = influx_config['org'],
+                            bucket = influx_config['bucket']).write_api(write_options=SYNCHRONOUS)
 
     # initialize rtmp stream writer if rtmp_output is True and rtmp_url is not None
     if rtmp_output:
@@ -231,10 +233,6 @@ def run_moni(
 
                         #---------------------- Save to InfluxDB ----------------------#
                         if save_influx:
-
-                            x_cord = np.array([int((bboxes[0] + bboxes[2]) / 2)])
-                            y_cord = np.array([int(bboxes[3])])
-
                             if detections_to_global:
                                 '''
                                 ToDo: Implement ground homography transformation (see homography_test.ipynb)
@@ -242,22 +240,17 @@ def run_moni(
                                 d_cord = np.array([x_cord, y_cord])
                                 x_cord, y_cord = warpPoint(d_cord, t_matrix)
 
+                            else:
+                                x_cord = np.array([int((bboxes[0] + bboxes[2]) / 2)])
+                                y_cord = np.array([int(bboxes[3])])
 
-                                raise NotImplementedError('perspective transformation not implemented yet')
+                            point = Point(influx_config['field']).tag('stream', stream_id).tag('frame', frame_idx
+                                                                ).tag('id', id).field('x', x_cord).field('y', y_cord)
 
-                            point = Point('person').tag('stream', stream_id
-                                                        ).tag('frame', frame_idx
-                                                            ).tag('id', id
-                                                                    ).field('x', x_cord
-                                                                            ).field('y', y_cord)
-
-                            influx_writer.add(point)
+                            influx_writer.write(bucket=influx_config['BUCKET'], org=influx_config['ORG'], record=point)
 
                 print(
                     f'{s}Done. YOLOv7:({t3 - t2:.3f}s) NMS:({t4 - t3:.3f}s) SORT:({t6 - t5:.3f}s)')
-
-                if save_influx:
-                    influx_writer.write()
 
             else:
                 strong_sort.increment_ages()
