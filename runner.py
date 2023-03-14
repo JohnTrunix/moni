@@ -245,13 +245,13 @@ def run_moni(
                                 x_cord, y_cord = warpPoint(d_cord, t_matrix)
 
                             else:
-                                x_cord = np.array([int((bboxes[0] + bboxes[2]) / 2)])
-                                y_cord = np.array([int(bboxes[3])])
+                                x_cord = int((bboxes[0] + bboxes[2]) / 2)
+                                y_cord = int(bboxes[3])
 
                             point = Point(influx_config['field']).tag('stream', stream_id).tag('frame', frame_idx
                                                                 ).tag('id', id).field('x', x_cord).field('y', y_cord)
 
-                            influx_writer.write(bucket=influx_config['BUCKET'], org=influx_config['ORG'], record=point)
+                            influx_writer.write(bucket=influx_config['bucket'], org=influx_config['org'], record=point)
 
                 print(
                     f'{s}Done. YOLOv7:({t3 - t2:.3f}s) NMS:({t4 - t3:.3f}s) SORT:({t6 - t5:.3f}s)')
