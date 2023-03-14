@@ -237,8 +237,8 @@ def run_moni(
 
                         #---------------------- Save to InfluxDB ----------------------#
                         if save_influx:
-                            x_cord = int((bboxes[0] + bboxes[2]) / 2)
-                            y_cord = int(bboxes[3])
+                            x_cord = (bboxes[0] + bboxes[2]) / 2
+                            y_cord = bboxes[3]
 
                             #---------------------- Transform detections to global coordinates ----------------------#
                             if detections_to_global:
