@@ -1,8 +1,29 @@
-from multiprocessing import Process, Barrier
-from runner import run_moni
+import argparse
+import os
 import yaml
+from multiprocessing import Barrier, Process
+from runner import run_moni
 from runner_utils import check_packages
-check_packages('./requirements.txt')
+
+
+# ----------------- Argument parser -----------------#
+def validate_file(f):
+    if not os.path.exists(f):
+        # Argparse uses the ArgumentTypeError to give a rejection message like:
+        # error: argument input: x does not exist
+        raise argparse.ArgumentTypeError("{0} does not exist!".format(f))
+    return f
+
+
+parser = argparse.ArgumentParser(description='Moni')
+parser.add_argument('--c',
+                    default='./conf/example-config.yml',
+                    type=validate_file,
+                    dest='config_file',
+                    help="path to config file.",
+                    metavar="FILE")
+
+args = parser.parse_args()
 
 
 # ----------------- Function Documentation -----------------#
@@ -25,7 +46,7 @@ def run_moni(
 '''
 
 # ----------------- Setup Multiprocessing -----------------#
-yml_config = './conf/example-config.yml'
+yml_config = args.config_file
 
 with open(yml_config, 'r', encoding="utf-8") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
@@ -63,6 +84,8 @@ s3 = Process(target=run_moni, args=(
 
 # ----------------- Run Multiprocessing -----------------#
 if __name__ == '__main__':
+    check_packages('./requirements.txt')
+
     s1.start()
     s2.start()
     s3.start()
