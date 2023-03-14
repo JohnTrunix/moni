@@ -112,8 +112,12 @@ def run_moni(
         if rtmp_url is None:
             raise ValueError('rtmp_url is None')
         else:
+            frame_size = cv2.VideoCapture(source)
+            frame_w = int(frame_size.get(cv2.CAP_PROP_FRAME_WIDTH))
+            frame_h = int(frame_size.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            frame_size.release()
             rtmp_process = subprocess.Popen(
-                ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-pix_fmt', 'bgr24', '-s', '360x288', '-i', '-', '-f', 'flv', rtmp_url], stdin=subprocess.PIPE)
+                ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-pix_fmt', 'bgr24', '-s', f'{frame_w}x{frame_h}', '-i', '-', '-f', 'flv', rtmp_url], stdin=subprocess.PIPE)
 
     #---------------------- Get File Type ----------------------#
     is_file = Path(source).suffix[1:] in VID_FORMATS
