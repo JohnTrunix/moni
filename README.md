@@ -1,68 +1,51 @@
-# moni
+<img src="github-content/moni_header.png" alt="moni logo" width="100%"/>
 
-Our project repository for the hackathon Thurgau challenge.
+<br>
 
-## Setup Repository
+> This is the offical repository of our project `moni` for the hackathon [Hackathon Thurgau 2023](https://hackathon-thurgau.ch/). The project was created and developed during the hackathon competition.
+>
+> The project aims to provide a solution for the `Challenge 3: occupancy measurement of a store`. This was achieved by using a combination of computer vision and a cnn model (for ReID) to detect and track people in a store and their movement. The data is then used for further analysis and visualizations.
 
-```console
-git clone git@github.com:JohnTrunix/moni.git
-```
+## Quicklinks
 
-```console
-cd moni
-```
+-   [Installation & Setup Guide](./
+-   [Project Structure](#project-structure)
+    -   [Folder Structure](#folder-structure)
+    -   [Mermaid Diagram](#mermaid-diagram)
+-   [Demo](#demo)
 
-```console
-git submodule update --init --recursive
-```
+## Project Structure
 
-### Check if all submodules and their submodules were set up correctly
-
-Check submodules:
+### Folder Structure
 
 ```console
-git submodule status
+moni
+├─── conf                               Configuration files
+|    └─── example-config.yml            Example configuration file
+├─── dash                               Plotly Dash App
+├─── github-content                     Images for the README.md
+├─── influxdb                           InfluxDB Scripts
+|    |─── read_influx.py                Demo script to read data from InfluxDB
+|    |─── write_influx.py               Demo script to write data to InfluxDB
+|    └─── *                             More InfluxDB related Scripts
+├─── weights                            Weights folder for yolo and reid models
+├─── Yolov7_StrongSORT_OSNet            Submodule from: mikel-brostrom
+├─── .gitignore                         Gitignore file
+├─── .gitmodules                        Gitmodules file
+├─── docker-compose.yml                 Docker Compose file
+├─── Dockerfile                         Dockerfile
+├─── homography.ipynb                   Jupyter Notebook for homography show case
+├─── README.md                          README.md
+├─── requirements.txt                   Requirements file
 
->>> 852c9cf5c610a149331ce8e42d47be103cfd03ab Yolov7_StrongSORT_OSNet (v1.0-14-g852c9cf)
 ```
 
-Check submodules of submodules:
+### Flow/Process Diagram
 
-```console
-git submodule foreach git submodule status
+<img src="github-content/flow_diagram.png" alt="moni logo" width="100%"/>
 
->>> 4a0793780bd13f53ec2ca753a94dcef62dc9e955 strong_sort/deep/reid (v1.0.6-153-g4a07937)
->>> 3ab80fb707528cdc0aaad8e7cef39546a1ccc7f2 yolov7 (heads/main)
-```
+## Demo
 
-## Setup Environment
+This is a demo of the running application with 3 different views.
 
-```console
-virtualenv env --python=3.10
-```
-
-```console
-env/Scripts/activate
-```
-
-### Install Pytorch / Torchvision
-
-With CUDA support (follow the instructions on the [Pytorch website](https://pytorch.org/get-started/locally/))
-
-For Pytorch Stable (1.13.1), Windows, Pip, Python, CUDA 11.7:
-
-```console
-pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117
-```
-
-Without CUDA support:
-
-```console
-pip install torch>=1.7.0,!=1.12.0 torchvision>=0.8.1,!=0.13.0
-```
-
-### Install Requirements
-
-```console
-pip install -r requirements.txt
-```
+Video Source: [EPFL Labs](https://www.epfl.ch/labs/cvlab/data/data-pom-index-php/)
