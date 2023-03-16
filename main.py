@@ -4,9 +4,11 @@ import yaml
 from multiprocessing import Barrier, Process
 from runner import run_moni
 from runner_utils import check_packages
-
+check_packages('./requirements.txt')
 
 # ----------------- Argument parser -----------------#
+
+
 def validate_file(f):
     if not os.path.exists(f):
         # Argparse uses the ArgumentTypeError to give a rejection message like:
@@ -17,7 +19,7 @@ def validate_file(f):
 
 parser = argparse.ArgumentParser(description='Moni')
 parser.add_argument('--c',
-                    default='./conf/example-config.yml',
+                    default='./conf/config.yml',
                     type=validate_file,
                     dest='config_file',
                     help="path to config file.",
@@ -87,7 +89,6 @@ s3 = Process(target=run_moni, args=(
 
 # ----------------- Run Multiprocessing -----------------#
 if __name__ == '__main__':
-    check_packages('./requirements.txt')
 
     s1.start()
     s2.start()
