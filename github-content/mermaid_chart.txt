@@ -1,0 +1,54 @@
+%%{ init : { "theme" : "neutral", "flowchart" : { "curve" : "liner" }}}%%
+
+flowchart LR
+    subgraph Stream Sources
+    A1[Stream 1]
+    A2[Stream 2]
+    A3[Stream 3]
+    end
+
+    subgraph Docker Microservices
+    subgraph Moni Multiprocessing 
+    C1[Subprocess 1]
+    C2[Subprocess 2]
+    C3[Subprocess 3]
+    end
+    subgraph RTMP Server 1
+    B1[Input Stream 1]
+    B2[Input Stream 2]
+    B3[Input Stream 3]
+    end
+    subgraph InfluxDB
+    D1[InfluxDB]
+    end
+    subgraph RTMP Server 2
+    E1[Output Stream 1]
+    E2[Output Stream 2]
+    E3[Output Stream 3]
+    end
+    subgraph Web App
+    X[Dashboard/Monitoring]
+    end
+    end
+
+
+    A1 --> B1
+    A2 --> B2
+    A3 --> B3
+
+    B1 --> C1
+    B2 --> C2
+    B3 --> C3
+
+    C1 --> D1
+    C2 --> D1
+    C3 --> D1
+
+    C1 --> E1
+    C2 --> E2
+    C3 --> E3
+
+    D1 --> X
+    E1 --> X
+    E2 --> X
+    E3 --> X

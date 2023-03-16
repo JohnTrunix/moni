@@ -8,7 +8,7 @@
 
 ## Quicklinks
 
--   [Installation & Setup Guide](./
+-   [Installation & Setup Guide](github-content/tech.md)
 -   [Project Structure](#project-structure)
     -   [Folder Structure](#folder-structure)
     -   [Mermaid Diagram](#mermaid-diagram)
