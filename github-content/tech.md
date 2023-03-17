@@ -96,8 +96,55 @@ python main.py --c conf/config.yml
 
 **Note:** if you want to run the application with Docker, see the [Docker section](#docker) below.
 
+## RTSP Stream
+
+### Publish stream
+
+Use ffmpeg to stream a local video feed to the rtsp server.
+
+```sh
+.\ffmpeg.exe -stream_loop -1 `
+-re `
+-i 'data\campus\campus4-c0.avi' `
+-filter:v fps=5 `
+-c:v libx264 `
+-preset slow `
+-crf 20 `
+-c:a aac `
+-b:a 160k `
+-vf format=yuv420p `
+-movflags +faststart `
+-rtsp_transport tcp `
+-f rtsp rtsp://<IP>:8554/input-stream-1
+```
+
+### Read stream
+
+Use ffplay to read streams
+
+```sh
+.\ffplay.exe rtsp://<IP>:8554/input-stream-1
+.\ffplay.exe rtsp://<IP>:8554/output-stream-1
+```
+
 ## Docker
 
-### Build Docker Image
+### Create config
 
-### Run Docker Container
+Create a `conf\docker-config.yml` file. In this file you have to define all settings for the moni docker container to work correctly. At startup by docker-compose this file will be mounted into the container.
+
+#### Start all containers
+
+For local development you can start all containers with one command.
+`docker compose --profile dev up --build --force-recreate -d`
+
+Now you need to configure the InfluxDB (http://localhost:8086) and complete the initial setup (Create org, token, bucket, etc.). Put the InfluxDB config in the `docker-config.yml` and restart moni with `docker restart moni`.
+
+#### Start moni container
+
+If you have a seperate InfluxDB and RTSP server running, you can only start the moni container.
+`docker compose --profile moni up --build --force-recreate -d`
+
+### Container logs
+
+You can use `docker logs -f moni` to check if the application is working correctly.
