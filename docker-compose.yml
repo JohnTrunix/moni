@@ -10,11 +10,11 @@ services:
             - no-new-privileges:true
         volumes:
             - ./conf/docker-config.yml:/usr/src/app/config.yml:ro
-            - ./data/campus/campus4-c0.avi:/usr/src/app/data/campus/campus4-c0.avi:ro
-            - ./data/campus/campus4-c1.avi:/usr/src/app/data/campus/campus4-c1.avi:ro
-            - ./data/campus/campus4-c2.avi:/usr/src/app/data/campus/campus4-c2.avi:ro
             - ./weights/yolov7.pt:/usr/src/app/weights/yolov7.pt:ro
             - ./weights/osnet_x0_75_msmt17.pt:/usr/src/app/weights/osnet_x0_75_msmt17.pt:ro
+            #- ./data/campus/campus4-c0.avi:/usr/src/app/data/campus/campus4-c0.avi:ro
+            #- ./data/campus/campus4-c1.avi:/usr/src/app/data/campus/campus4-c1.avi:ro
+            #- ./data/campus/campus4-c2.avi:/usr/src/app/data/campus/campus4-c2.avi:ro
         deploy:
             resources:
                 reservations:
@@ -34,15 +34,15 @@ services:
         ports:
             - 8086:8086/tcp
 
-    rtmp:
-        image: alqutami/rtmp-hls:latest-alpine
-        container_name: rtmp
-        profiles: ['rtmp', 'dev']
+    rtsp:
+        image: aler9/rtsp-simple-server
+        container_name: rtsp
+        profiles: ['rtsp', 'dev']
         restart: unless-stopped
         security_opt:
             - no-new-privileges:true
         ports:
-            - 1935:1935/tcp
+            - 8554:8554/tcp
 
 volumes:
     influxdb_data:
