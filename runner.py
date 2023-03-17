@@ -117,7 +117,18 @@ def run_moni(
             frame_h = int(frame_size.get(cv2.CAP_PROP_FRAME_HEIGHT))
             frame_size.release()
             rtmp_process = subprocess.Popen(
-                ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-pix_fmt', 'bgr24', '-s', f'{frame_w}x{frame_h}', '-i', '-', '-f', 'flv', rtmp_url], stdin=subprocess.PIPE)
+                ['ffmpeg', 
+                 '-y',
+                 '-f', 'rawvideo',
+                 '-vcodec', 'rawvideo',
+                 '-pix_fmt', 'bgr24',
+                 '-s', f'{frame_w}x{frame_h}',
+                 '-i', '-',
+                 '-an',
+                 '-vcodec', 'mpeg4',
+                 '-b:v', '5000k',
+                 '-f', 'rtsp',
+                 rtmp_url], stdin=subprocess.PIPE)
 
     #---------------------- Get File Type ----------------------#
     is_file = Path(source).suffix[1:] in VID_FORMATS
@@ -189,11 +200,16 @@ def run_moni(
             seen += 1
 
             if is_webcam:
-                p, im0, _ = Path(path[i]), im0s[i].copy(), dataset.count[i]
+                p, im0, _ = path[i], im0s[i].copy(), dataset.count
                 s += f'{i}: '
+
+                p = Path(p)
+
             else:
-                p, im0, _ = Path(path), im0s.copy(), getattr(
+                p, im0, _ = path, im0s.copy(), getattr(
                     dataset, 'frame', 0)
+
+                p = Path(p)
 
             curr_frames[i] = im0
             s += f'{im.shape[2]}x{im.shape[3]} '
