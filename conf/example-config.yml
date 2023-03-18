@@ -4,6 +4,8 @@ flags:
     rtmp_output: False # stream video to rtmp server (with bounding boxes)
     show_matplot: False # show live coordinates with matplotlib
     detections_to_global: False # transform detections coordinates to global coordinates (transformation matrix must be set)
+    save_video_local: False # save output videos locally
+    save_coordinates_to_file: False # save coordinates per stream to file
 
 general:
     classes: [0] # classes to detect (0 = person)
