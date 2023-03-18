@@ -104,8 +104,7 @@ def run_moni(
         influx_writer = InfluxDBClient(
                             url = influx_config['url'],
                             token = influx_config['token'],
-                            org = influx_config['org'],
-                            bucket = influx_config['bucket']).write_api(write_options=SYNCHRONOUS)
+                            org = influx_config['org']).write_api(write_options=SYNCHRONOUS)
 
     # initialize rtmp stream writer if rtmp_output is True and rtmp_url is not None
     if rtmp_output:
@@ -261,8 +260,11 @@ def run_moni(
                                 d_cord = np.array([x_cord, y_cord])
                                 x_cord, y_cord = warpPoint(d_cord, t_matrix)
 
-                            point = Point(influx_config['field']).tag('stream', stream_id).tag('frame', frame_idx
-                                                                ).tag('id', id).field('x', x_cord).field('y', y_cord)
+                            point = Point(influx_config['field']).tag('stream', stream_id
+                                                                ).tag('id', id
+                                                                ).field('x', x_cord
+                                                                ).field('y', y_cord
+                                                                ).field('frame', frame_idx)
 
                             influx_writer.write(bucket=influx_config['bucket'], org=influx_config['org'], record=point)
 
