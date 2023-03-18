@@ -125,8 +125,8 @@ def run_moni(
     if save_video_local:
         if not os.path.exists('output/streams'):
             os.makedirs('output/streams')
-        vid_writer = cv2.VideoWriter(f'output/streams/{stream_id}.mp4', 
-                                     cv2.VideoWriter_fourcc(*'mp4v'), frame_fps, (frame_w, frame_h))
+        vid_writer = cv2.VideoWriter(f'output/streams/{stream_id}.avi',
+                                     cv2.VideoWriter_fourcc(*'XVID'), frame_fps, (frame_w, frame_h))
 
     # initialize rtmp stream writer if rtmp_output is True and rtmp_url is not None
     if rtmp_output:
@@ -308,7 +308,8 @@ def run_moni(
                 cv2.waitKey(1)
 
             if save_video_local:
-                vid_writer.write(im0)
+                frame = cv2.resize(im0, (frame_w, frame_h), cv2.INTER_LANCZOS4)
+                vid_writer.write(frame)
 
             if rtmp_output:
                 fb = im0.tostring()
