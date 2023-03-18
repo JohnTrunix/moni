@@ -74,6 +74,8 @@ def run_moni(
     show_video = config['flags']['show_video']
     show_matplot = config['flags']['show_matplot']
     detections_to_global = config['flags']['detections_to_global']
+    save_video_local = config['flags']['save_video_local']
+    save_coordinates_to_file = config['flags']['save_coordinates_to_file']
 
     # general configs
     classes = config['general']['classes']
@@ -99,7 +101,6 @@ def run_moni(
             if t_matrix.shape != (3, 3):
                 raise ValueError('t_matrix is not 3x3')
 
-
     if save_influx:
         influx_writer = InfluxDBClient(
                             url = influx_config['url'],
@@ -107,15 +108,32 @@ def run_moni(
                             org = influx_config['org'],
                             bucket = influx_config['bucket']).write_api(write_options=SYNCHRONOUS)
 
+    if save_coordinates_to_file:
+        if not os.path.exists('output'):
+            os.makedirs('output')
+        with open(f'output/coordinates_{stream_id}.csv', 'a') as f:
+            f.write('frame,track_id,x,y\n')
+
+    # get attributes from source before running
+    if save_video_local or rtmp_output:
+        frame_size = cv2.VideoCapture(source)
+        frame_w = int(frame_size.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_h = int(frame_size.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        frame_fps = int(frame_size.get(cv2.CAP_PROP_FPS))
+        frame_size.release()
+
+    # initialize video writer
+    if save_video_local:
+        if not os.path.exists('output/streams'):
+            os.makedirs('output/streams')
+        vid_writer = cv2.VideoWriter(f'output/streams/{stream_id}.mp4', 
+                                     cv2.VideoWriter_fourcc(*'mp4v'), frame_fps, (frame_w, frame_h))
+
     # initialize rtmp stream writer if rtmp_output is True and rtmp_url is not None
     if rtmp_output:
         if rtmp_url is None:
             raise ValueError('rtmp_url is None')
         else:
-            frame_size = cv2.VideoCapture(source)
-            frame_w = int(frame_size.get(cv2.CAP_PROP_FRAME_WIDTH))
-            frame_h = int(frame_size.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            frame_size.release()
             rtmp_process = subprocess.Popen(
                 ['ffmpeg', 
                  '-y',
@@ -198,7 +216,6 @@ def run_moni(
         #---------------------- Process detections ----------------------#
         for i, det in enumerate(pred):
             seen += 1
-
             if is_webcam:
                 p, im0, _ = path[i], im0s[i].copy(), dataset.count
                 s += f'{i}: '
@@ -266,6 +283,17 @@ def run_moni(
 
                             influx_writer.write(bucket=influx_config['bucket'], org=influx_config['org'], record=point)
 
+                        if save_coordinates_to_file:
+                            x_cord = (bboxes[0] + bboxes[2]) / 2
+                            y_cord = bboxes[3]
+
+                            if detections_to_global:
+                                d_cord = np.array([x_cord, y_cord])
+                                x_cord, y_cord = warpPoint(d_cord, t_matrix)
+
+                            with open(f'output/coordinates_{stream_id}.csv', 'a') as f:
+                                f.write(f'{frame_idx},{id},{x_cord},{y_cord}\n')
+
                 print(
                     f'{s}Done. YOLOv7:({t3 - t2:.3f}s) NMS:({t4 - t3:.3f}s) SORT:({t6 - t5:.3f}s)')
 
@@ -276,6 +304,9 @@ def run_moni(
             if show_video:
                 cv2.imshow(str(p), im0)
                 cv2.waitKey(1)
+
+            if save_video_local:
+                vid_writer.write(im0)
 
             if rtmp_output:
                 fb = im0.tostring()

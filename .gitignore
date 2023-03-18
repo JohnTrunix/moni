@@ -2,6 +2,7 @@
 data/
 images/
 weights/
+output/
 
 test.py
 *.pt
