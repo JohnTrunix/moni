@@ -22,21 +22,21 @@
 moni
 ├─── conf                               Configuration files
 |    └─── example-config.yml            Example configuration file
-├─── dash                               Plotly Dash App
+├─── examples                           Configuration files
+|    └─── homography.ipynb              Jupyter Notebook for homography show case
 ├─── github-content                     Images for the README.md
-├─── influxdb                           InfluxDB Scripts
-|    |─── read_influx.py                Demo script to read data from InfluxDB
-|    |─── write_influx.py               Demo script to write data to InfluxDB
-|    └─── *                             More InfluxDB related Scripts
-├─── weights                            Weights folder for yolo and reid models
+|    |─── tech.md                       Technical documentation how to use moni
+|    └─── mermaid_chart.txt             Mermaid chart of the moni architecture
 ├─── Yolov7_StrongSORT_OSNet            Submodule from: mikel-brostrom
 ├─── .gitignore                         Gitignore file
 ├─── .gitmodules                        Gitmodules file
-├─── docker-compose.yml                 Docker Compose file
-├─── Dockerfile                         Dockerfile
-├─── homography.ipynb                   Jupyter Notebook for homography show case
+├─── Dockerfile                         Dockerfile to containerize moni
 ├─── README.md                          README.md
+├─── main.py                            Moni main python script
+├─── runner_utils.py                    Util functions which are used by moni
+├─── runner.py                          Runner function which does the processing work
 ├─── requirements.txt                   Requirements file
+└─── docker-compose.yml                 Docker compose file to spin up the whole moni platform
 
 ```
 
