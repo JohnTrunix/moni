@@ -2,6 +2,7 @@
 data/
 images/
 weights/
+demo/
 output/
 
 test.py
