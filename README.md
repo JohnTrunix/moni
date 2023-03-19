@@ -46,6 +46,8 @@ moni
 
 ## Demo
 
-This is a demo of the running application with 3 different views.
+This is a demo of the running application with 3 different views:
+
+![Demo Video](https://raw.githubusercontent.com/JohnTrunix/moni/main/github-content/demo_video.gif)
 
 Video Source: [EPFL Labs](https://www.epfl.ch/labs/cvlab/data/data-pom-index-php/)
